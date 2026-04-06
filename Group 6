@@ -1,0 +1,250 @@
+import java.util.*;
+import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.io.*;
+
+public class Main {
+
+    static class Product {
+        String name;
+        double price;
+
+        Product(String name, double price) {
+            this.name = name;
+            this.price = price;
+        }
+    }
+
+    static Scanner scanner = new Scanner(System.in);
+    static ArrayList<Product> products = new ArrayList<>();
+    static double totalSales = 0;
+
+    public static void main(String[] args) {
+
+        int choice;
+
+        do {
+
+            showMenu();
+            choice = getChoice();
+
+            switch (choice) {
+
+                case 1:
+                    addProduct();
+                    break;
+
+                case 2:
+                    viewProducts();
+                    break;
+
+                case 3:
+                    processSale();
+                    break;
+
+                case 4:
+                    showSalesReport();
+                    break;
+
+                case 5:
+                    System.out.println("Exiting system... Thank you!");
+                    break;
+
+                default:
+                    System.out.println("Invalid choice.");
+            }
+
+        } while (choice != 5);
+    }
+
+    static void showMenu() {
+
+        System.out.println("\n===== Small Business Sales and Billing Management System =====");
+        System.out.println("1. Add Product");
+        System.out.println("2. View Products");
+        System.out.println("3. Process Sale");
+        System.out.println("4. Sales Report (Total Sales + All Receipts)");
+        System.out.println("5. Exit");
+        System.out.print("Enter choice: ");
+    }
+
+    static int getChoice() {
+
+        while (!scanner.hasNextInt()) {
+            System.out.println("Choice must be a number.");
+            scanner.next();
+        }
+
+        return scanner.nextInt();
+    }
+
+    static void addProduct() {
+
+        scanner.nextLine();
+
+        System.out.print("Enter product name: ");
+        String name = scanner.nextLine();
+
+        System.out.print("Enter product price: ");
+
+        while (!scanner.hasNextDouble()) {
+            System.out.println("Price must be a number.");
+            scanner.next();
+        }
+
+        double price = scanner.nextDouble();
+
+        products.add(new Product(name, price));
+
+        System.out.println("Product added successfully!");
+    }
+
+    static void viewProducts() {
+
+        if (products.isEmpty()) {
+            System.out.println("No products available.");
+            return;
+        }
+
+        System.out.println("\n--- PRODUCT LIST ---");
+
+        for (int i = 0; i < products.size(); i++) {
+
+            Product p = products.get(i);
+
+            System.out.println((i + 1) + ". " + p.name + " - ₱" + p.price);
+        }
+    }
+
+    static void processSale() {
+
+        if (products.isEmpty()) {
+            System.out.println("No products available.");
+            return;
+        }
+
+        double total = 0;
+        char more;
+
+        do {
+
+            viewProducts();
+
+            System.out.print("Select product number: ");
+            int index = scanner.nextInt() - 1;
+
+            if (index >= 0 && index < products.size()) {
+
+                System.out.print("Enter quantity: ");
+
+                while (!scanner.hasNextInt()) {
+                    System.out.println("Quantity must be a number.");
+                    scanner.next();
+                }
+
+                int qty = scanner.nextInt();
+
+                double subtotal = products.get(index).price * qty;
+
+                total += subtotal;
+
+                System.out.println("Added to cart. Subtotal: ₱" + subtotal);
+
+            } else {
+
+                System.out.println("Invalid product.");
+            }
+
+            System.out.print("Add more items? (y/n): ");
+            more = scanner.next().toLowerCase().charAt(0);
+
+        } while (more == 'y');
+
+        System.out.println("\nTotal Amount: ₱" + total);
+
+        System.out.print("Enter payment: ₱");
+
+        while (!scanner.hasNextDouble()) {
+            System.out.println("Payment must be a number.");
+            scanner.next();
+        }
+
+        double payment = scanner.nextDouble();
+
+        if (payment >= total) {
+
+            double change = payment - total;
+
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Manila"));
+            DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            String dateTime = now.format(format);
+
+            String receipt =
+                    "\n===== RECEIPT =====\n" +
+                    "Date & Time: " + dateTime + "\n" +
+                    "Total: ₱" + total + "\n" +
+                    "Payment: ₱" + payment + "\n" +
+                    "Change: ₱" + change + "\n" +
+                    "----------------------\n";
+
+            System.out.println(receipt);
+
+            saveReceipt(receipt);
+
+            System.out.println("Transaction successful!");
+
+            totalSales += total;
+
+        } else {
+
+            System.out.println("Insufficient payment. Transaction cancelled.");
+        }
+    }
+
+    static void saveReceipt(String receipt) {
+
+        try {
+
+            FileWriter writer = new FileWriter("receipts.txt", true);
+            writer.write(receipt);
+            writer.close();
+
+        } catch (IOException e) {
+
+            System.out.println("Error saving receipt.");
+        }
+    }
+
+    static void showSalesReport() {
+
+        System.out.println("\n===== SALES REPORT =====");
+        System.out.println("Total Sales: ₱" + totalSales);
+
+        System.out.println("\n----- ALL RECEIPTS -----");
+
+        try {
+
+            File file = new File("receipts.txt");
+
+            if (!file.exists()) {
+                System.out.println("No receipts found.");
+                return;
+            }
+
+            BufferedReader reader = new BufferedReader(new FileReader(file));
+
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                System.out.println(line);
+            }
+
+            reader.close();
+
+        } catch (IOException e) {
+
+            System.out.println("Error reading receipts.");
+        }
+    }
+}
